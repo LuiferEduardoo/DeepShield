@@ -6,10 +6,16 @@ import { colors, radii } from "~lib/theme"
 interface CategoryCardProps {
   category: Category
   active: boolean
+  subtitle?: React.ReactNode
   onToggle: () => void
 }
 
-function CategoryCard({ category, active, onToggle }: CategoryCardProps) {
+function CategoryCard({
+  category,
+  active,
+  subtitle,
+  onToggle
+}: CategoryCardProps) {
   const [hover, setHover] = useState(false)
   const background = active
     ? colors.accentSoft
@@ -40,9 +46,17 @@ function CategoryCard({ category, active, onToggle }: CategoryCardProps) {
       }}>
       <span style={{ fontSize: 26, lineHeight: 1 }}>{category.emoji}</span>
       <span style={{ fontSize: 13, fontWeight: 600 }}>{category.label}</span>
-      <span style={{ fontSize: 11, color: colors.muted }}>
-        {category.domains.length} sitios
-      </span>
+      {subtitle !== undefined ? (
+        typeof subtitle === "string" ? (
+          <span style={{ fontSize: 11, color: colors.muted }}>{subtitle}</span>
+        ) : (
+          subtitle
+        )
+      ) : (
+        <span style={{ fontSize: 11, color: colors.muted }}>
+          {category.domains.length} sitios
+        </span>
+      )}
       <ActiveIndicator active={active} />
     </button>
   )

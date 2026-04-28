@@ -1,7 +1,5 @@
-import { useState } from "react"
-
+import DaysSelector from "~components/DaysSelector"
 import {
-  DAYS_ORDER,
   formatMinutes,
   parseTime,
   type FocusSchedule
@@ -14,13 +12,6 @@ interface ScheduleEditorProps {
 }
 
 function ScheduleEditor({ schedule, onChange }: ScheduleEditorProps) {
-  const toggleDay = (day: number) => {
-    const next = schedule.days.includes(day)
-      ? schedule.days.filter((d) => d !== day)
-      : [...schedule.days, day].sort((a, b) => a - b)
-    onChange({ ...schedule, days: next })
-  }
-
   return (
     <div
       style={{
@@ -32,16 +23,10 @@ function ScheduleEditor({ schedule, onChange }: ScheduleEditorProps) {
         gap: 18
       }}>
       <Field label="Días de la semana">
-        <div style={{ display: "flex", gap: 6 }}>
-          {DAYS_ORDER.map(({ idx, label }) => (
-            <DayButton
-              key={idx}
-              label={label}
-              active={schedule.days.includes(idx)}
-              onClick={() => toggleDay(idx)}
-            />
-          ))}
-        </div>
+        <DaysSelector
+          days={schedule.days}
+          onChange={(days) => onChange({ ...schedule, days })}
+        />
       </Field>
 
       <Field label="Horario">
@@ -95,43 +80,6 @@ function Field({
       </span>
       {children}
     </div>
-  )
-}
-
-function DayButton({
-  label,
-  active,
-  onClick
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  const [hover, setHover] = useState(false)
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      aria-pressed={active}
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: radii.sm,
-        border: "none",
-        background: active
-          ? colors.accent
-          : hover
-            ? colors.surfaceAlt
-            : colors.bg,
-        color: active ? "#fff" : colors.text,
-        fontSize: 13,
-        fontWeight: 600,
-        cursor: "pointer",
-        transition: "background 120ms ease"
-      }}>
-      {label}
-    </button>
   )
 }
 

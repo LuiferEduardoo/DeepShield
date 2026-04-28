@@ -1,17 +1,26 @@
+import { useMemo } from "react"
+
 import { useStorage } from "@plasmohq/storage/hook"
 
-import BlocklistEditor from "~components/BlocklistEditor"
+import RuleBlocklistEditor from "~components/RuleBlocklistEditor"
 import {
   BLOCKED_CATEGORIES_KEY,
-  BLOCKED_SITES_KEY
+  BLOCKED_SITES_KEY,
+  migrateRules,
+  type RuleMap
 } from "~lib/blocking"
 import { colors } from "~lib/theme"
 
 function BlockSitesView() {
-  const [sites, setSites] = useStorage<string[]>(BLOCKED_SITES_KEY, [])
-  const [categories, setCategories] = useStorage<string[]>(
+  const [rawSites, setRawSites] = useStorage<unknown>(BLOCKED_SITES_KEY, {})
+  const [rawCategories, setRawCategories] = useStorage<unknown>(
     BLOCKED_CATEGORIES_KEY,
-    []
+    {}
+  )
+  const siteRules = useMemo(() => migrateRules(rawSites), [rawSites])
+  const categoryRules = useMemo(
+    () => migrateRules(rawCategories),
+    [rawCategories]
   )
 
   return (
@@ -27,15 +36,15 @@ function BlockSitesView() {
             color: colors.muted,
             lineHeight: 1.5
           }}>
-          Estos sitios están bloqueados de forma permanente.
+          Configura días y tiempo límite por sitio o categoría.
         </p>
       </header>
 
-      <BlocklistEditor
-        sites={sites ?? []}
-        onSitesChange={setSites}
-        categories={categories ?? []}
-        onCategoriesChange={setCategories}
+      <RuleBlocklistEditor
+        siteRules={siteRules}
+        onSiteRulesChange={(r: RuleMap) => setRawSites(r)}
+        categoryRules={categoryRules}
+        onCategoryRulesChange={(r: RuleMap) => setRawCategories(r)}
       />
     </>
   )

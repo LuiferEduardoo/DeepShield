@@ -46,3 +46,36 @@ export function extractHostname(url: string): string {
     return url
   }
 }
+
+export interface BlockRule {
+  days: number[]
+  dailyLimitMinutes: number | null
+}
+
+export const DEFAULT_RULE: BlockRule = {
+  days: [],
+  dailyLimitMinutes: null
+}
+
+export type RuleMap = Record<string, BlockRule>
+
+export function ruleApplies(rule: BlockRule, now: Date): boolean {
+  return rule.days.length === 0 || rule.days.includes(now.getDay())
+}
+
+export function isOverLimit(rule: BlockRule, usageMinutes: number): boolean {
+  if (rule.dailyLimitMinutes === null) return true
+  return usageMinutes >= rule.dailyLimitMinutes
+}
+
+export function migrateRules(value: unknown): RuleMap {
+  if (Array.isArray(value)) {
+    const out: RuleMap = {}
+    for (const k of value) {
+      if (typeof k === "string") out[k] = { ...DEFAULT_RULE }
+    }
+    return out
+  }
+  if (value && typeof value === "object") return value as RuleMap
+  return {}
+}

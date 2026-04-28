@@ -26,6 +26,7 @@
   },
   "manifest": {
     "permissions": [
+      "alarms",
       "storage",
       "tabs",
       "webNavigation"
