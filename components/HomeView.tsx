@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { useStorage } from "@plasmohq/storage/hook"
 
+import SectionTitle from "~components/SectionTitle"
 import StatCard from "~components/StatCard"
 import type { BlockEvent } from "~lib/blocking"
 import { BLOCK_EVENTS_KEY } from "~lib/blocking"
@@ -107,22 +108,6 @@ function HomeView() {
         </div>
       ) : null}
     </>
-  )
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2
-      style={{
-        margin: "0 0 10px",
-        fontSize: 13,
-        fontWeight: 600,
-        color: colors.muted,
-        textTransform: "uppercase",
-        letterSpacing: 0.6
-      }}>
-      {children}
-    </h2>
   )
 }
 

@@ -6,31 +6,65 @@ import {
   BLOCKED_SITES_KEY,
   BLOCK_EVENTS_KEY,
   extractHostname,
+  FOCUS_MODE_KEY,
   isBlockedUrl,
   MAX_EVENTS
 } from "~lib/blocking"
 import { domainsForCategories } from "~lib/categories"
+import {
+  DEFAULT_FOCUS_SCHEDULE,
+  FOCUS_CATEGORIES_KEY,
+  FOCUS_SCHEDULE_KEY,
+  FOCUS_SITES_KEY,
+  isFocusActive,
+  type FocusSchedule
+} from "~lib/focus"
 
 const storage = new Storage()
 
 const state = {
   customSites: [] as string[],
-  categories: [] as string[]
+  categories: [] as string[],
+  focusSites: [] as string[],
+  focusCategories: [] as string[],
+  schedule: DEFAULT_FOCUS_SCHEDULE as FocusSchedule,
+  manualFocus: false
 }
 
 function effectiveSites(): string[] {
   const set = new Set<string>(state.customSites)
   for (const d of domainsForCategories(state.categories)) set.add(d)
+  const focusOn =
+    state.manualFocus || isFocusActive(state.schedule, new Date())
+  if (focusOn) {
+    for (const s of state.focusSites) set.add(s)
+    for (const d of domainsForCategories(state.focusCategories)) set.add(d)
+  }
   return Array.from(set)
 }
 
 async function hydrate() {
-  const [customSites, categories] = await Promise.all([
+  const [
+    customSites,
+    categories,
+    focusSites,
+    focusCategories,
+    schedule,
+    manualFocus
+  ] = await Promise.all([
     storage.get<string[]>(BLOCKED_SITES_KEY),
-    storage.get<string[]>(BLOCKED_CATEGORIES_KEY)
+    storage.get<string[]>(BLOCKED_CATEGORIES_KEY),
+    storage.get<string[]>(FOCUS_SITES_KEY),
+    storage.get<string[]>(FOCUS_CATEGORIES_KEY),
+    storage.get<FocusSchedule>(FOCUS_SCHEDULE_KEY),
+    storage.get<boolean>(FOCUS_MODE_KEY)
   ])
   state.customSites = customSites ?? []
   state.categories = categories ?? []
+  state.focusSites = focusSites ?? []
+  state.focusCategories = focusCategories ?? []
+  state.schedule = schedule ?? DEFAULT_FOCUS_SCHEDULE
+  state.manualFocus = manualFocus ?? false
 }
 
 storage.watch({
@@ -39,6 +73,18 @@ storage.watch({
   },
   [BLOCKED_CATEGORIES_KEY]: (c) => {
     state.categories = (c.newValue as string[]) ?? []
+  },
+  [FOCUS_SITES_KEY]: (c) => {
+    state.focusSites = (c.newValue as string[]) ?? []
+  },
+  [FOCUS_CATEGORIES_KEY]: (c) => {
+    state.focusCategories = (c.newValue as string[]) ?? []
+  },
+  [FOCUS_SCHEDULE_KEY]: (c) => {
+    state.schedule = (c.newValue as FocusSchedule) ?? DEFAULT_FOCUS_SCHEDULE
+  },
+  [FOCUS_MODE_KEY]: (c) => {
+    state.manualFocus = (c.newValue as boolean) ?? false
   }
 })
 
