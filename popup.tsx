@@ -91,12 +91,6 @@ function IndexPopup() {
           onClick={openDashboard}
           icon={<DashboardIcon />}
         />
-        <NavLink
-          label="Configuración"
-          description="Reglas, horarios y preferencias"
-          onClick={openSettings}
-          icon={<GearIcon />}
-        />
       </nav>
     </div>
   )
