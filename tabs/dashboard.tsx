@@ -1,275 +1,81 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
-import { useStorage } from "@plasmohq/storage/hook"
-
-import StatCard from "~components/StatCard"
-import type { BlockEvent } from "~lib/blocking"
-import {
-  BLOCKED_SITES_KEY,
-  BLOCK_EVENTS_KEY,
-  FOCUS_MODE_KEY
-} from "~lib/blocking"
-import {
-  countLastDays,
-  countToday,
-  formatRelative,
-  recentEvents,
-  topHosts,
-  type HostCount
-} from "~lib/stats"
-import { colors, fontFamily, radii } from "~lib/theme"
+import BlockSitesView from "~components/BlockSitesView"
+import HomeView from "~components/HomeView"
+import Sidebar, { type SidebarItemDef } from "~components/Sidebar"
+import { colors, fontFamily } from "~lib/theme"
 
 import "../style.css"
 
-const RECENT_LIMIT = 8
-const TOP_LIMIT = 5
+type ViewId = "home" | "blocks"
+
+const NAV_ITEMS: SidebarItemDef[] = [
+  { id: "home", label: "Inicio", icon: <HomeIcon /> },
+  { id: "blocks", label: "Bloquear sitios", icon: <ShieldIcon /> }
+]
+
+function readHash(): ViewId {
+  if (typeof window === "undefined") return "home"
+  return window.location.hash.slice(1) === "blocks" ? "blocks" : "home"
+}
 
 function DashboardPage() {
-  const [events, setEvents] = useStorage<BlockEvent[]>(BLOCK_EVENTS_KEY, [])
-  const [sites] = useStorage<string[]>(BLOCKED_SITES_KEY, [])
-  const [focusOn] = useStorage<boolean>(FOCUS_MODE_KEY, false)
+  const [view, setView] = useState<ViewId>(readHash)
 
-  const all = events ?? []
-  const today = countToday(all)
-  const week = countLastDays(all, 7)
-  const total = all.length
-  const top = topHosts(all, TOP_LIMIT)
-  const recent = recentEvents(all, RECENT_LIMIT)
+  useEffect(() => {
+    const onChange = () => setView(readHash())
+    window.addEventListener("hashchange", onChange)
+    return () => window.removeEventListener("hashchange", onChange)
+  }, [])
+
+  const select = (id: string) => {
+    window.location.hash = id
+  }
 
   return (
-    <main
+    <div
       style={{
+        display: "flex",
         minHeight: "100vh",
         background: colors.bg,
         color: colors.text,
-        fontFamily,
-        padding: "32px 16px"
+        fontFamily
       }}>
-      <div style={{ maxWidth: 760, margin: "0 auto" }}>
-        <Header focusOn={!!focusOn} sitesCount={(sites ?? []).length} />
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 12,
-            marginTop: 20
-          }}>
-          <StatCard label="Hoy" value={today} hint="bloqueos" />
-          <StatCard label="Últimos 7 días" value={week} hint="bloqueos" />
-          <StatCard label="Total" value={total} hint="histórico" />
-        </section>
-
-        <section style={{ marginTop: 24 }}>
-          <SectionTitle>Sitios más bloqueados</SectionTitle>
-          {top.length === 0 ? (
-            <EmptyCard message="Sin datos todavía. Activa el modo focus y empieza a navegar." />
-          ) : (
-            <div
-              style={{
-                background: colors.surface,
-                borderRadius: radii.lg,
-                padding: 8,
-                display: "flex",
-                flexDirection: "column",
-                gap: 2
-              }}>
-              {top.map((row) => (
-                <HostBar key={row.host} row={row} max={top[0].count} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section style={{ marginTop: 24 }}>
-          <SectionTitle>Actividad reciente</SectionTitle>
-          {recent.length === 0 ? (
-            <EmptyCard message="Aún no hay actividad registrada." />
-          ) : (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: 6
-              }}>
-              {recent.map((e) => (
-                <EventRow key={e.timestamp} event={e} />
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {total > 0 ? (
-          <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
-            <ClearButton onClick={() => setEvents([])} />
-          </div>
-        ) : null}
-      </div>
-    </main>
+      <Sidebar items={NAV_ITEMS} activeId={view} onSelect={select} />
+      <main style={{ flex: 1, padding: "32px 32px", overflow: "auto" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          {view === "home" ? <HomeView /> : <BlockSitesView />}
+        </div>
+      </main>
+    </div>
   )
 }
 
-function Header({
-  focusOn,
-  sitesCount
-}: {
-  focusOn: boolean
-  sitesCount: number
-}) {
+function HomeIcon() {
   return (
-    <header
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        gap: 16
-      }}>
-      <div>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Dashboard</h1>
-        <p
-          style={{
-            margin: "6px 0 0",
-            fontSize: 13,
-            color: colors.muted,
-            lineHeight: 1.5
-          }}>
-          Tu actividad de DeepShield. {sitesCount} sitios en la lista.
-        </p>
-      </div>
-      <StatusPill on={focusOn} />
-    </header>
-  )
-}
-
-function StatusPill({ on }: { on: boolean }) {
-  return (
-    <span
-      style={{
-        padding: "6px 12px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 600,
-        background: on ? colors.success : colors.surfaceAlt,
-        color: on ? "#0b1f17" : colors.muted,
-        whiteSpace: "nowrap"
-      }}>
-      {on ? "Modo focus activo" : "Modo focus inactivo"}
-    </span>
-  )
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2
-      style={{
-        margin: "0 0 10px",
-        fontSize: 13,
-        fontWeight: 600,
-        color: colors.muted,
-        textTransform: "uppercase",
-        letterSpacing: 0.6
-      }}>
-      {children}
-    </h2>
-  )
-}
-
-function HostBar({ row, max }: { row: HostCount; max: number }) {
-  const pct = Math.max(6, Math.round((row.count / max) * 100))
-  return (
-    <div
-      style={{
-        padding: "10px 12px",
-        borderRadius: radii.md,
-        position: "relative"
-      }}>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          margin: 4,
-          width: `calc(${pct}% - 8px)`,
-          background: colors.accentSoft,
-          borderRadius: radii.sm,
-          opacity: 0.5
-        }}
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          fontSize: 13
-        }}>
-        <span style={{ fontWeight: 500 }}>{row.host}</span>
-        <span style={{ color: colors.muted, fontVariantNumeric: "tabular-nums" }}>
-          {row.count}
-        </span>
-      </div>
-    </div>
+    </svg>
   )
 }
 
-function EventRow({ event }: { event: BlockEvent }) {
+function ShieldIcon() {
   return (
-    <li
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "10px 14px",
-        borderRadius: radii.md,
-        background: colors.surface,
-        fontSize: 13
-      }}>
-      <span>{event.host}</span>
-      <span style={{ color: colors.muted, fontSize: 12 }}>
-        {formatRelative(event.timestamp)}
-      </span>
-    </li>
-  )
-}
-
-function EmptyCard({ message }: { message: string }) {
-  return (
-    <div
-      style={{
-        padding: "20px",
-        textAlign: "center",
-        color: colors.muted,
-        fontSize: 13,
-        background: colors.surface,
-        borderRadius: radii.md
-      }}>
-      {message}
-    </div>
-  )
-}
-
-function ClearButton({ onClick }: { onClick: () => void }) {
-  const [hover, setHover] = useState(false)
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        padding: "8px 14px",
-        borderRadius: radii.md,
-        background: hover ? colors.surfaceAlt : colors.surface,
-        border: "none",
-        color: colors.muted,
-        fontSize: 12,
-        fontWeight: 500,
-        cursor: "pointer",
-        transition: "background 120ms ease"
-      }}>
-      Limpiar historial
-    </button>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 3l8 3v6c0 5-3.5 8.6-8 10-4.5-1.4-8-5-8-10V6l8-3z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
 

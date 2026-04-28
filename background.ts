@@ -2,44 +2,51 @@ import { Storage } from "@plasmohq/storage"
 
 import type { BlockEvent } from "~lib/blocking"
 import {
+  BLOCKED_CATEGORIES_KEY,
   BLOCKED_SITES_KEY,
   BLOCK_EVENTS_KEY,
   extractHostname,
-  FOCUS_MODE_KEY,
   isBlockedUrl,
   MAX_EVENTS
 } from "~lib/blocking"
+import { domainsForCategories } from "~lib/categories"
 
 const storage = new Storage()
 
 const state = {
-  sites: [] as string[],
-  focusOn: false
+  customSites: [] as string[],
+  categories: [] as string[]
+}
+
+function effectiveSites(): string[] {
+  const set = new Set<string>(state.customSites)
+  for (const d of domainsForCategories(state.categories)) set.add(d)
+  return Array.from(set)
 }
 
 async function hydrate() {
-  const [sites, focusOn] = await Promise.all([
+  const [customSites, categories] = await Promise.all([
     storage.get<string[]>(BLOCKED_SITES_KEY),
-    storage.get<boolean>(FOCUS_MODE_KEY)
+    storage.get<string[]>(BLOCKED_CATEGORIES_KEY)
   ])
-  state.sites = sites ?? []
-  state.focusOn = focusOn ?? false
+  state.customSites = customSites ?? []
+  state.categories = categories ?? []
 }
 
 storage.watch({
   [BLOCKED_SITES_KEY]: (c) => {
-    state.sites = (c.newValue as string[]) ?? []
+    state.customSites = (c.newValue as string[]) ?? []
   },
-  [FOCUS_MODE_KEY]: (c) => {
-    state.focusOn = (c.newValue as boolean) ?? false
+  [BLOCKED_CATEGORIES_KEY]: (c) => {
+    state.categories = (c.newValue as string[]) ?? []
   }
 })
 
 function shouldRedirect(url: string): boolean {
-  if (!state.focusOn) return false
-  if (state.sites.length === 0) return false
   if (url.startsWith(chrome.runtime.getURL(""))) return false
-  return isBlockedUrl(url, state.sites)
+  const sites = effectiveSites()
+  if (sites.length === 0) return false
+  return isBlockedUrl(url, sites)
 }
 
 function blockedPageUrl(originalUrl: string): string {

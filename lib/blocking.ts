@@ -1,4 +1,5 @@
 export const BLOCKED_SITES_KEY = "blocked-sites"
+export const BLOCKED_CATEGORIES_KEY = "blocked-categories"
 export const FOCUS_MODE_KEY = "focus-mode"
 export const BLOCK_EVENTS_KEY = "block-events"
 export const MAX_EVENTS = 500
