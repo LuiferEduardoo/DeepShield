@@ -1,5 +1,12 @@
 export const BLOCKED_SITES_KEY = "blocked-sites"
 export const FOCUS_MODE_KEY = "focus-mode"
+export const BLOCK_EVENTS_KEY = "block-events"
+export const MAX_EVENTS = 500
+
+export interface BlockEvent {
+  host: string
+  timestamp: number
+}
 
 export function normalizeSite(input: string): string {
   let value = input.trim().toLowerCase()
