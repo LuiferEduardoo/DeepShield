@@ -5,6 +5,8 @@ import { useStorage } from "@plasmohq/storage/hook"
 import { FOCUS_MODE_KEY } from "~lib/blocking"
 import { colors, fontFamily } from "~lib/theme"
 
+import "./style.css"
+
 function IndexPopup() {
   const [focusOn, setFocusOn] = useStorage<boolean>(FOCUS_MODE_KEY, false)
 
@@ -34,7 +36,6 @@ function IndexPopup() {
       <header
         style={{
           padding: "18px 18px 14px",
-          borderBottom: `1px solid ${colors.border}`,
           display: "flex",
           gap: 12,
           alignItems: "flex-start"
@@ -79,7 +80,6 @@ function IndexPopup() {
       <nav
         style={{
           marginTop: 10,
-          borderTop: `1px solid ${colors.border}`,
           padding: "10px 10px 12px",
           display: "flex",
           flexDirection: "column",
@@ -164,7 +164,7 @@ function SecondaryButton({
         padding: "10px 14px",
         borderRadius: 10,
         background: hover ? colors.surfaceAlt : colors.surface,
-        border: `1px solid ${colors.border}`,
+        border: "none",
         color: colors.text,
         fontSize: 13,
         fontWeight: 500,
@@ -213,7 +213,6 @@ function NavLink({
           height: 32,
           borderRadius: 8,
           background: colors.surface,
-          border: `1px solid ${colors.border}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

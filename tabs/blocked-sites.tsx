@@ -9,6 +9,8 @@ import {
 } from "~lib/blocking"
 import { colors, fontFamily, radii } from "~lib/theme"
 
+import "../style.css"
+
 function BlockedSitesPage() {
   const [sites, setSites] = useStorage<string[]>(BLOCKED_SITES_KEY, [])
   const [input, setInput] = useState("")

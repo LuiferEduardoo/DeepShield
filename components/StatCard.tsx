@@ -11,7 +11,6 @@ function StatCard({ label, value, hint }: StatCardProps) {
     <div
       style={{
         background: colors.surface,
-        border: `1px solid ${colors.border}`,
         borderRadius: radii.lg,
         padding: "16px 18px",
         display: "flex",

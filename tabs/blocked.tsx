@@ -3,6 +3,8 @@ import { useEffect, useState } from "react"
 import { extractHostname } from "~lib/blocking"
 import { colors, fontFamily, radii } from "~lib/theme"
 
+import "../style.css"
+
 function BlockedPage() {
   const [host, setHost] = useState("")
 

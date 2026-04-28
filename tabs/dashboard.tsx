@@ -19,6 +19,8 @@ import {
 } from "~lib/stats"
 import { colors, fontFamily, radii } from "~lib/theme"
 
+import "../style.css"
+
 const RECENT_LIMIT = 8
 const TOP_LIMIT = 5
 
@@ -66,7 +68,6 @@ function DashboardPage() {
             <div
               style={{
                 background: colors.surface,
-                border: `1px solid ${colors.border}`,
                 borderRadius: radii.lg,
                 padding: 8,
                 display: "flex",
@@ -153,7 +154,6 @@ function StatusPill({ on }: { on: boolean }) {
         fontWeight: 600,
         background: on ? colors.success : colors.surfaceAlt,
         color: on ? "#0b1f17" : colors.muted,
-        border: `1px solid ${on ? colors.success : colors.border}`,
         whiteSpace: "nowrap"
       }}>
       {on ? "Modo focus activo" : "Modo focus inactivo"}
@@ -224,7 +224,6 @@ function EventRow({ event }: { event: BlockEvent }) {
         padding: "10px 14px",
         borderRadius: radii.md,
         background: colors.surface,
-        border: `1px solid ${colors.border}`,
         fontSize: 13
       }}>
       <span>{event.host}</span>
@@ -244,7 +243,6 @@ function EmptyCard({ message }: { message: string }) {
         color: colors.muted,
         fontSize: 13,
         background: colors.surface,
-        border: `1px dashed ${colors.border}`,
         borderRadius: radii.md
       }}>
       {message}
@@ -262,8 +260,8 @@ function ClearButton({ onClick }: { onClick: () => void }) {
       style={{
         padding: "8px 14px",
         borderRadius: radii.md,
-        background: hover ? colors.surfaceAlt : "transparent",
-        border: `1px solid ${colors.border}`,
+        background: hover ? colors.surfaceAlt : colors.surface,
+        border: "none",
         color: colors.muted,
         fontSize: 12,
         fontWeight: 500,
