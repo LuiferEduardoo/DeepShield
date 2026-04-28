@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
 
+import blockedGif from "url:~assets/200w.gif"
+
 import { extractHostname } from "~lib/blocking"
 import { colors, fontFamily, radii } from "~lib/theme"
 
@@ -48,14 +50,13 @@ function BlockedPage() {
           padding: 32,
           textAlign: "center"
         }}>
-        <Crest />
         <h1
           style={{
-            margin: "16px 0 8px",
+            margin: "20px 0 8px",
             fontSize: 22,
             fontWeight: 700
           }}>
-          Sitio bloqueado
+          No puedes entrar a esta página
         </h1>
         <p
           style={{
@@ -67,7 +68,17 @@ function BlockedPage() {
           DeepShield está protegiendo tu enfoque. Tu tiempo es el recurso más
           valioso.
         </p>
-
+        <img
+          src={blockedGif}
+          alt=""
+          style={{
+            width: "100%",
+            maxWidth: 230,
+            borderRadius: radii.md,
+            display: "block",
+            margin: "0 auto"
+          }}
+        />
         {host ? (
           <div
             style={{
@@ -135,31 +146,6 @@ function ActionButton({
       }}>
       {children}
     </button>
-  )
-}
-
-function Crest() {
-  return (
-    <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
-      <defs>
-        <linearGradient id="bp" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={colors.accent} />
-          <stop offset="100%" stopColor="#22d3ee" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 2.5l8 3v6c0 5-3.5 8.6-8 10-4.5-1.4-8-5-8-10v-6l8-3z"
-        fill="url(#bp)"
-      />
-      <path
-        d="M9 12.2l2.2 2.2L15 10.6"
-        stroke={colors.bg}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
   )
 }
 
