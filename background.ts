@@ -157,8 +157,11 @@ async function recordBlock(url: string) {
   await storage.set(BLOCK_EVENTS_KEY, [...events, event].slice(-MAX_EVENTS))
 }
 
-chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+const hydrated = hydrate()
+
+chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (details.frameId !== 0) return
+  await hydrated
   if (!shouldRedirect(details.url, new Date())) return
   recordBlock(details.url)
   chrome.tabs.update(details.tabId, { url: blockedPageUrl(details.url) })
@@ -168,6 +171,7 @@ chrome.alarms.create(TICK_ALARM, { periodInMinutes: 1 })
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== TICK_ALARM) return
+  await hydrated
   await tickUsage()
 })
 
@@ -214,5 +218,3 @@ async function tickUsage() {
     chrome.tabs.update(tab.id, { url: blockedPageUrl(tab.url) })
   }
 }
-
-hydrate()
