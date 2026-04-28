@@ -1,14 +1,49 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { useStorage } from "@plasmohq/storage/hook"
 
-import { FOCUS_MODE_KEY } from "~lib/blocking"
-import { colors, fontFamily } from "~lib/theme"
+import Favicon from "~components/Favicon"
+import {
+  BLOCKED_SITES_KEY,
+  DEFAULT_RULE,
+  extractHostname,
+  FOCUS_MODE_KEY,
+  migrateRules
+} from "~lib/blocking"
+import { colors, fontFamily, radii } from "~lib/theme"
 
 import "./style.css"
 
 function IndexPopup() {
   const [focusOn, setFocusOn] = useStorage<boolean>(FOCUS_MODE_KEY, false)
+  const [rawSites, setRawSites] = useStorage<unknown>(BLOCKED_SITES_KEY, {})
+  const siteRules = useMemo(() => migrateRules(rawSites), [rawSites])
+
+  const [currentUrl, setCurrentUrl] = useState<string | null>(null)
+  useEffect(() => {
+    chrome.tabs
+      .query({ active: true, currentWindow: true })
+      .then((tabs) => setCurrentUrl(tabs[0]?.url ?? null))
+  }, [])
+
+  const isHttp =
+    !!currentUrl &&
+    (currentUrl.startsWith("http://") || currentUrl.startsWith("https://"))
+  const currentDomain = isHttp ? extractHostname(currentUrl) : ""
+  const blockable = !!currentDomain
+  const blocked = blockable && currentDomain in siteRules
+
+  const blockCurrent = () => {
+    if (!blockable) return
+    setRawSites({ ...siteRules, [currentDomain]: { ...DEFAULT_RULE } })
+  }
+
+  const unblockCurrent = () => {
+    if (!blockable) return
+    const next = { ...siteRules }
+    delete next[currentDomain]
+    setRawSites(next)
+  }
 
   const openDashboard = () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("tabs/dashboard.html") })
@@ -57,6 +92,38 @@ function IndexPopup() {
         </div>
       </header>
 
+      {blockable ? (
+        <section style={{ padding: "0 18px 4px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "10px 12px",
+              borderRadius: radii.md,
+              background: colors.surface
+            }}>
+            <Favicon domain={currentDomain} size={20} />
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: 13,
+                fontWeight: 500,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              }}>
+              {currentDomain}
+            </div>
+            <CurrentSiteButton
+              blocked={blocked}
+              onClick={blocked ? unblockCurrent : blockCurrent}
+            />
+          </div>
+        </section>
+      ) : null}
+
       <section
         style={{
           padding: "14px 18px 4px",
@@ -93,6 +160,44 @@ function IndexPopup() {
         />
       </nav>
     </div>
+  )
+}
+
+function CurrentSiteButton({
+  blocked,
+  onClick
+}: {
+  blocked: boolean
+  onClick: () => void
+}) {
+  const [hover, setHover] = useState(false)
+  const background = blocked
+    ? hover
+      ? "#3a1f23"
+      : colors.surfaceAlt
+    : hover
+      ? colors.accentSoft
+      : colors.accent
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        padding: "6px 12px",
+        borderRadius: 8,
+        border: "none",
+        background,
+        color: blocked ? "#f87171" : "#fff",
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: "pointer",
+        transition: "background 120ms ease",
+        whiteSpace: "nowrap",
+        flexShrink: 0
+      }}>
+      {blocked ? "Quitar" : "Bloquear"}
+    </button>
   )
 }
 
