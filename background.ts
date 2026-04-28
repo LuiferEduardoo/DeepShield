@@ -28,6 +28,8 @@ import {
   getUsage,
   pruneUsage,
   siteUsageKey,
+  TIME_SPENT_KEY,
+  TIME_SPENT_RETENTION_DAYS,
   todayKey,
   USAGE_KEY,
   withIncrement,
@@ -44,7 +46,8 @@ const state = {
   focusCategories: [] as string[],
   schedule: DEFAULT_FOCUS_SCHEDULE as FocusSchedule,
   manualFocus: false,
-  usage: {} as DailyUsage
+  usage: {} as DailyUsage,
+  timeSpent: {} as DailyUsage
 }
 
 function checkPermanentBlock(url: string, now: Date): boolean {
@@ -93,7 +96,8 @@ async function hydrate() {
     focusCategories,
     schedule,
     manualFocus,
-    usage
+    usage,
+    timeSpent
   ] = await Promise.all([
     storage.get(BLOCKED_SITES_KEY),
     storage.get(BLOCKED_CATEGORIES_KEY),
@@ -101,7 +105,8 @@ async function hydrate() {
     storage.get<string[]>(FOCUS_CATEGORIES_KEY),
     storage.get<FocusSchedule>(FOCUS_SCHEDULE_KEY),
     storage.get<boolean>(FOCUS_MODE_KEY),
-    storage.get<DailyUsage>(USAGE_KEY)
+    storage.get<DailyUsage>(USAGE_KEY),
+    storage.get<DailyUsage>(TIME_SPENT_KEY)
   ])
   state.siteRules = migrateRules(rawSites)
   state.categoryRules = migrateRules(rawCategories)
@@ -110,6 +115,7 @@ async function hydrate() {
   state.schedule = schedule ?? DEFAULT_FOCUS_SCHEDULE
   state.manualFocus = manualFocus ?? false
   state.usage = usage ?? {}
+  state.timeSpent = timeSpent ?? {}
 
   if (Array.isArray(rawSites)) {
     await storage.set(BLOCKED_SITES_KEY, state.siteRules)
@@ -140,6 +146,9 @@ storage.watch({
   },
   [USAGE_KEY]: (c) => {
     state.usage = (c.newValue as DailyUsage) ?? {}
+  },
+  [TIME_SPENT_KEY]: (c) => {
+    state.timeSpent = (c.newValue as DailyUsage) ?? {}
   }
 })
 
@@ -182,11 +191,22 @@ async function tickUsage() {
   })
   const tab = tabs[0]
   if (!tab?.url || tab.id == null) return
-  const hostname = extractHostname(tab.url)
+
+  const url = tab.url
+  if (!url.startsWith("http://") && !url.startsWith("https://")) return
+  if (url.startsWith(chrome.runtime.getURL(""))) return
+
+  const hostname = extractHostname(url)
   if (!hostname) return
 
   const now = new Date()
   const today = todayKey(now)
+
+  let nextTime = withIncrement(state.timeSpent, today, hostname)
+  nextTime = pruneUsage(nextTime, now, TIME_SPENT_RETENTION_DAYS)
+  state.timeSpent = nextTime
+  await storage.set(TIME_SPENT_KEY, nextTime)
+
   let nextUsage = state.usage
   let dirty = false
 
@@ -214,7 +234,7 @@ async function tickUsage() {
   state.usage = nextUsage
   await storage.set(USAGE_KEY, nextUsage)
 
-  if (shouldRedirect(tab.url, now)) {
-    chrome.tabs.update(tab.id, { url: blockedPageUrl(tab.url) })
+  if (shouldRedirect(url, now)) {
+    chrome.tabs.update(tab.id, { url: blockedPageUrl(url) })
   }
 }

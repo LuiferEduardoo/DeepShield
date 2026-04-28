@@ -14,6 +14,14 @@ import {
   topHosts,
   type HostCount
 } from "~lib/stats"
+import {
+  formatDuration,
+  TIME_SPENT_KEY,
+  topByTime,
+  totalMinutes,
+  type DailyUsage,
+  type DomainTime
+} from "~lib/usage"
 import { colors, radii } from "~lib/theme"
 
 const RECENT_LIMIT = 8
@@ -21,12 +29,16 @@ const TOP_LIMIT = 5
 
 function HomeView() {
   const [events, setEvents] = useStorage<BlockEvent[]>(BLOCK_EVENTS_KEY, [])
+  const [timeSpent] = useStorage<DailyUsage>(TIME_SPENT_KEY, {})
   const all = events ?? []
   const today = countToday(all)
   const week = countLastDays(all, 7)
   const total = all.length
   const top = topHosts(all, TOP_LIMIT)
   const recent = recentEvents(all, RECENT_LIMIT)
+  const time = timeSpent ?? {}
+  const topTime = topByTime(time, TOP_LIMIT)
+  const totalTime = totalMinutes(time)
 
   return (
     <>
@@ -46,13 +58,47 @@ function HomeView() {
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
+          gridTemplateColumns: "repeat(4, 1fr)",
           gap: 12,
           marginTop: 20
         }}>
         <StatCard label="Hoy" value={today} hint="bloqueos" />
         <StatCard label="Últimos 7 días" value={week} hint="bloqueos" />
         <StatCard label="Total" value={total} hint="histórico" />
+        <StatCard
+          label="Tiempo navegado"
+          value={formatDuration(totalTime)}
+          hint="histórico"
+        />
+      </section>
+
+      <section style={{ marginTop: 28 }}>
+        <SectionTitle>Tiempo en páginas</SectionTitle>
+        <p
+          style={{
+            margin: "-4px 0 12px",
+            fontSize: 12,
+            color: colors.muted
+          }}>
+          Dominios donde más tiempo has pasado (histórico).
+        </p>
+        {topTime.length === 0 ? (
+          <EmptyCard message="Aún no hay tiempo registrado. Navega un poco y vuelve." />
+        ) : (
+          <div
+            style={{
+              background: colors.surface,
+              borderRadius: radii.lg,
+              padding: 8,
+              display: "flex",
+              flexDirection: "column",
+              gap: 2
+            }}>
+            {topTime.map((row) => (
+              <TimeBar key={row.domain} row={row} max={topTime[0].minutes} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section style={{ marginTop: 28 }}>
@@ -143,6 +189,44 @@ function HostBar({ row, max }: { row: HostCount; max: number }) {
         <span
           style={{ color: colors.muted, fontVariantNumeric: "tabular-nums" }}>
           {row.count}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function TimeBar({ row, max }: { row: DomainTime; max: number }) {
+  const pct = Math.max(6, Math.round((row.minutes / max) * 100))
+  return (
+    <div
+      style={{
+        padding: "10px 12px",
+        borderRadius: radii.md,
+        position: "relative"
+      }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          margin: 4,
+          width: `calc(${pct}% - 8px)`,
+          background: colors.accentSoft,
+          borderRadius: radii.sm,
+          opacity: 0.5
+        }}
+      />
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 13
+        }}>
+        <span style={{ fontWeight: 500 }}>{row.domain}</span>
+        <span
+          style={{ color: colors.muted, fontVariantNumeric: "tabular-nums" }}>
+          {formatDuration(row.minutes)}
         </span>
       </div>
     </div>

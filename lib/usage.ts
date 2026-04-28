@@ -1,6 +1,42 @@
 export const USAGE_KEY = "site-usage"
+export const TIME_SPENT_KEY = "time-spent"
+export const TIME_SPENT_RETENTION_DAYS = 90
 
 export type DailyUsage = Record<string, Record<string, number>>
+
+export interface DomainTime {
+  domain: string
+  minutes: number
+}
+
+export function topByTime(usage: DailyUsage, limit: number): DomainTime[] {
+  const totals = new Map<string, number>()
+  for (const dayMap of Object.values(usage)) {
+    for (const [domain, minutes] of Object.entries(dayMap)) {
+      totals.set(domain, (totals.get(domain) ?? 0) + minutes)
+    }
+  }
+  return Array.from(totals, ([domain, minutes]) => ({ domain, minutes }))
+    .sort((a, b) => b.minutes - a.minutes)
+    .slice(0, limit)
+}
+
+export function totalMinutes(usage: DailyUsage): number {
+  let total = 0
+  for (const dayMap of Object.values(usage)) {
+    for (const minutes of Object.values(dayMap)) total += minutes
+  }
+  return total
+}
+
+export function formatDuration(minutes: number): string {
+  if (minutes < 1) return "< 1 min"
+  if (minutes < 60) return `${minutes} min`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
+}
 
 export function todayKey(now: Date): string {
   const y = now.getFullYear()
