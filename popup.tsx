@@ -1,19 +1,12 @@
 import { useState } from "react"
 
-const colors = {
-  bg: "#0f1115",
-  surface: "#171a21",
-  surfaceAlt: "#1f242e",
-  border: "#262b36",
-  text: "#ececf1",
-  muted: "#9098a8",
-  accent: "#7c5cff",
-  accentSoft: "#3a2f7a",
-  success: "#34d399"
-}
+import { useStorage } from "@plasmohq/storage/hook"
+
+import { FOCUS_MODE_KEY } from "~lib/blocking"
+import { colors, fontFamily } from "~lib/theme"
 
 function IndexPopup() {
-  const [focusOn, setFocusOn] = useState(false)
+  const [focusOn, setFocusOn] = useStorage<boolean>(FOCUS_MODE_KEY, false)
 
   const openDashboard = () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("tabs/dashboard.html") })
@@ -35,8 +28,7 @@ function IndexPopup() {
         width: 320,
         background: colors.bg,
         color: colors.text,
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily,
         margin: 0
       }}>
       <header
@@ -72,8 +64,8 @@ function IndexPopup() {
           gap: 10
         }}>
         <PrimaryButton
-          onClick={() => setFocusOn((v) => !v)}
-          active={focusOn}>
+          onClick={() => setFocusOn(!focusOn)}
+          active={!!focusOn}>
           <FocusIcon />
           {focusOn ? "Modo focus activo" : "Modo focus"}
         </PrimaryButton>
