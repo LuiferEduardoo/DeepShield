@@ -2,7 +2,7 @@
   "name": "deepshield",
   "displayName": "DeepShield",
   "version": "0.0.1",
-  "description": "A basic Plasmo extension.",
+  "description": "Una extensión para ayudarte a mantener el enfoque y evitar distracciones en línea, bloqueando sitios web que te hacen perder tiempo y fomentando hábitos digitales más saludables.",
   "author": "LuiferEduardoo",
   "scripts": {
     "dev": "plasmo dev",
