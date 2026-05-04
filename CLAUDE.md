@@ -105,3 +105,4 @@ npx tsc --noEmit  # type-check sin emitir
 - No envolver `chrome.*` con try/catch defensivos sin causa — si una API puede faltar, abstraer en `lib/`.
 - No añadir comentarios que describan *qué* hace el código; solo *por qué* cuando no es obvio.
 - Type-check (`npx tsc --noEmit`) debe pasar antes de dar una tarea por terminada.
+- **Toda la documentación se escribe en inglés** (`README.md`, comentarios de "por qué", JSDoc, mensajes de commit). La UI y los strings visibles al usuario siguen en español.
