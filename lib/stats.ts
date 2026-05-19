@@ -1,4 +1,5 @@
 import type { BlockEvent } from "~lib/blocking"
+import type { DateRange } from "~lib/period"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -46,6 +47,19 @@ export function recentEvents(
   return [...events]
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, limit)
+}
+
+export function filterByRange(
+  events: BlockEvent[],
+  range: DateRange
+): BlockEvent[] {
+  return events.filter(
+    (e) => e.timestamp >= range.fromMs && e.timestamp <= range.toMs
+  )
+}
+
+export function uniqueHosts(events: BlockEvent[]): number {
+  return new Set(events.map((e) => e.host)).size
 }
 
 export function formatRelative(timestamp: number, now = Date.now()): string {

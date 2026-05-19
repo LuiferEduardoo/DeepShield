@@ -2,23 +2,27 @@ import { useState } from "react"
 
 import { useStorage } from "@plasmohq/storage/hook"
 
+import PeriodPicker from "~components/PeriodPicker"
 import SectionTitle from "~components/SectionTitle"
 import StatCard from "~components/StatCard"
 import type { BlockEvent } from "~lib/blocking"
 import { BLOCK_EVENTS_KEY } from "~lib/blocking"
+import { resolveRange, type Period } from "~lib/period"
 import {
-  countLastDays,
-  countToday,
+  filterByRange,
   formatRelative,
   recentEvents,
   topHosts,
+  uniqueHosts,
   type HostCount
 } from "~lib/stats"
 import {
+  filterUsageByRange,
   formatDuration,
   TIME_SPENT_KEY,
   topByTime,
   totalMinutes,
+  uniqueDomains,
   type DailyUsage,
   type DomainTime
 } from "~lib/usage"
@@ -30,15 +34,19 @@ const TOP_LIMIT = 5
 function HomeView() {
   const [events, setEvents] = useStorage<BlockEvent[]>(BLOCK_EVENTS_KEY, [])
   const [timeSpent] = useStorage<DailyUsage>(TIME_SPENT_KEY, {})
-  const all = events ?? []
-  const today = countToday(all)
-  const week = countLastDays(all, 7)
-  const total = all.length
-  const top = topHosts(all, TOP_LIMIT)
-  const recent = recentEvents(all, RECENT_LIMIT)
-  const time = timeSpent ?? {}
-  const topTime = topByTime(time, TOP_LIMIT)
-  const totalTime = totalMinutes(time)
+  const [period, setPeriod] = useState<Period>({ kind: "week" })
+
+  const range = resolveRange(period)
+  const filteredEvents = filterByRange(events ?? [], range)
+  const filteredTime = filterUsageByRange(timeSpent ?? {}, range)
+
+  const blocksCount = filteredEvents.length
+  const sitesBlocked = uniqueHosts(filteredEvents)
+  const top = topHosts(filteredEvents, TOP_LIMIT)
+  const recent = recentEvents(filteredEvents, RECENT_LIMIT)
+  const topTime = topByTime(filteredTime, TOP_LIMIT)
+  const totalTime = totalMinutes(filteredTime)
+  const sitesVisited = uniqueDomains(filteredTime)
 
   return (
     <>
@@ -55,20 +63,32 @@ function HomeView() {
         </p>
       </header>
 
+      <section style={{ marginTop: 20 }}>
+        <PeriodPicker value={period} onChange={setPeriod} />
+      </section>
+
       <section
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
           gap: 12,
-          marginTop: 20
+          marginTop: 16
         }}>
-        <StatCard label="Hoy" value={today} hint="bloqueos" />
-        <StatCard label="Últimos 7 días" value={week} hint="bloqueos" />
-        <StatCard label="Total" value={total} hint="histórico" />
+        <StatCard label="Bloqueos" value={blocksCount} hint="en el período" />
+        <StatCard
+          label="Sitios bloqueados"
+          value={sitesBlocked}
+          hint="distintos"
+        />
         <StatCard
           label="Tiempo navegado"
           value={formatDuration(totalTime)}
-          hint="histórico"
+          hint="en el período"
+        />
+        <StatCard
+          label="Sitios visitados"
+          value={sitesVisited}
+          hint="distintos"
         />
       </section>
 
@@ -143,7 +163,7 @@ function HomeView() {
         )}
       </section>
 
-      {total > 0 ? (
+      {(events ?? []).length > 0 ? (
         <div
           style={{
             marginTop: 24,

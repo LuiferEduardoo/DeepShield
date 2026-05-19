@@ -21,6 +21,27 @@ export function topByTime(usage: DailyUsage, limit: number): DomainTime[] {
     .slice(0, limit)
 }
 
+export function filterUsageByRange(
+  usage: DailyUsage,
+  range: { fromMs: number; toMs: number }
+): DailyUsage {
+  const out: DailyUsage = {}
+  for (const [day, map] of Object.entries(usage)) {
+    const [y, m, d] = day.split("-").map(Number)
+    const ts = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1).getTime()
+    if (ts >= range.fromMs && ts <= range.toMs) out[day] = map
+  }
+  return out
+}
+
+export function uniqueDomains(usage: DailyUsage): number {
+  const set = new Set<string>()
+  for (const dayMap of Object.values(usage)) {
+    for (const domain of Object.keys(dayMap)) set.add(domain)
+  }
+  return set.size
+}
+
 export function totalMinutes(usage: DailyUsage): number {
   let total = 0
   for (const dayMap of Object.values(usage)) {
