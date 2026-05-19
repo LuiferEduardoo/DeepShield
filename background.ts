@@ -209,6 +209,7 @@ async function tickUsage() {
 
   let nextUsage = state.usage
   let dirty = false
+  let warningTarget: string | null = null
 
   for (const [domain, rule] of Object.entries(state.siteRules)) {
     if (rule.dailyLimitMinutes === null) continue
@@ -216,6 +217,8 @@ async function tickUsage() {
     if (!ruleApplies(rule, now)) continue
     nextUsage = withIncrement(nextUsage, today, siteUsageKey(domain))
     dirty = true
+    const used = getUsage(nextUsage, today, siteUsageKey(domain))
+    if (used === rule.dailyLimitMinutes - 1) warningTarget = domain
   }
 
   for (const [catId, rule] of Object.entries(state.categoryRules)) {
@@ -226,6 +229,8 @@ async function tickUsage() {
     if (!cat.domains.some((d) => matchesSite(hostname, d))) continue
     nextUsage = withIncrement(nextUsage, today, categoryUsageKey(catId))
     dirty = true
+    const used = getUsage(nextUsage, today, categoryUsageKey(catId))
+    if (used === rule.dailyLimitMinutes - 1) warningTarget = cat.label
   }
 
   if (!dirty) return
@@ -236,5 +241,15 @@ async function tickUsage() {
 
   if (shouldRedirect(url, now)) {
     chrome.tabs.update(tab.id, { url: blockedPageUrl(url) })
+    return
+  }
+
+  if (warningTarget) {
+    chrome.tabs
+      .sendMessage(tab.id, {
+        type: "focus-warning",
+        text: `Te queda menos de 1 minuto en ${warningTarget}`
+      })
+      .catch(() => {})
   }
 }
